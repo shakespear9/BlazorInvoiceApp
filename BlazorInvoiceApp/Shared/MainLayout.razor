@@ -2,8 +2,8 @@
 
 <PageTitle>BlazorInvoiceApp</PageTitle>
 
-<AuthorizeView>
-    <NotAuthorized>
+@* <AuthorizeView> *@
+    @* <NotAuthorized> *@
         <div class="page">
             <div class="sidebar">
                 <NavMenu />
@@ -17,11 +17,13 @@
 
                 <article class="content px-4">
                     @Body
+                    
                 </article>
             </main>
+            <RadzenDialog />
         </div>
-    </NotAuthorized>
+    @* </NotAuthorized> *@
 @*     <Authorized>
         <h1>Not Authorize</h1>
     </Authorized> *@
-</AuthorizeView>
+@* </AuthorizeView> *@

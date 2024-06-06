@@ -6,6 +6,7 @@ using BlazorInvoiceApp.Repository.Interface;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Radzen;
 
 namespace BlazorInvoiceApp
 {
@@ -35,6 +36,8 @@ namespace BlazorInvoiceApp
             builder.Services.AddSingleton(mapper);
 
             builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
+
+            builder.Services.AddRadzenComponents();
 
             var app = builder.Build();
 

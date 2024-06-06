@@ -1,0 +1,149 @@
+﻿@inject IUnitOfWork unitOfWork;
+@inject AuthenticationStateProvider authState;
+
+
+<h3>Invoice Terms</h3>
+
+<div class="text-danger">@Message</div>
+
+<RadzenButton Icon="add_circle_outline" ButtonStyle="ButtonStyle.Success" class="mt-2 mb-4" Text="Add New Invoice Terms" Click="@InsertRow" Disabled=@(invoiceTermsToInsert is not null || invoiceTermsToUpdate is not null) />
+<RadzenDataGrid @ref="invoiceTermsGrid" Data="@invoiceTerms" TItem="InvoiceTermsDTO" AllowAlternatingRows="false"
+                AllowSorting="true" EditMode="DataGridEditMode.Single"
+                RowUpdate="@OnUpdateRow" Sort="@Reset"
+                RowCreate="@OnCreateRow">
+    <Columns>
+        @* <RadzenDataGridColumn TItem="CustomerDTO" Property="Id" Title="Id" Width="200px"></RadzenDataGridColumn> *@
+        <RadzenDataGridColumn TItem="InvoiceTermsDTO" Property="Name" Title="Name" Width="200px">
+            <EditTemplate Context="invoiceTerm">
+                @* Name attribute of RadzenTextBox is linked to Component property of RadzenRequiredValidator *@
+                <RadzenTextBox @bind-Value="@invoiceTerm.Name" Style="width:100%; display:block" Name="Name"  />
+                <RadzenRequiredValidator Text="Name is Required" Component="Name" Popup="true" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="InvoiceTermsDTO" Context="invoiceTerm" Filterable="false" Sortable="false" TextAlign="TextAlign.Right" Width="150px">
+            @* Render When not on editing mode *@
+            <Template>
+                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(args => EditRow(invoiceTerm))" @onclick:stopPropagation="true"></RadzenButton>
+                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Medium" Click="@(args => DeleteRow(invoiceTerm))" @onclick:stopPropagation="true"></RadzenButton>
+            </Template>
+            @* Render When on editing mode *@
+            <EditTemplate Context="invoiceTerm">
+                <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(args => SaveRow(invoiceTerm))"></RadzenButton>
+                <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" class="my-1 ms-1" Click="@(args => CancelEdit(invoiceTerm))"></RadzenButton>
+                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Medium" class="my-1 ms-1" Click="@(args => DeleteRow(invoiceTerm))"></RadzenButton>
+
+            </EditTemplate>
+        </RadzenDataGridColumn>
+    </Columns>
+
+</RadzenDataGrid>
+
+@code {
+    List<InvoiceTermsDTO> invoiceTerms = new();
+    RadzenDataGrid<InvoiceTermsDTO>? invoiceTermsGrid;
+
+    string Message = string.Empty;
+    InvoiceTermsDTO? invoiceTermsToInsert;
+    InvoiceTermsDTO? invoiceTermsToUpdate;
+
+    string beforeName = string.Empty;
+
+    // InvoiceTermsDTO? beforeInvoiceTermToUpdate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await authState.GetAuthenticationStateAsync();
+        await unitOfWork.InvoiceTerms.Seed(auth.User);
+        await unitOfWork.Save();
+        invoiceTerms = await unitOfWork.InvoiceTerms.GetAllMine(auth.User);
+    }
+
+    async Task EditRow(InvoiceTermsDTO invoiceTerm)
+    {
+        Message = String.Empty;
+        beforeName = invoiceTerm.Name;
+        invoiceTermsToUpdate = invoiceTerm;
+        // tell grid switch to edit mode
+        await invoiceTermsGrid!.EditRow(invoiceTerm);
+    }
+
+    async Task OnUpdateRow(InvoiceTermsDTO invoiceTerm)
+    {
+        var auth = await authState.GetAuthenticationStateAsync();
+        await unitOfWork.InvoiceTerms.UpdateMine(auth.User, invoiceTerm);
+        await unitOfWork.Save();
+        Reset();
+    }
+
+    async Task SaveRow(InvoiceTermsDTO invoiceTerm)
+    {
+        Message = "";
+        // tell grid to update row and switch back to view mode
+        // and will hook RowUpdate Grid event which call to OnUpdateRow
+        await invoiceTermsGrid!.UpdateRow(invoiceTerm);
+    }
+
+    void CancelEdit(InvoiceTermsDTO invoiceTerm)
+    {
+        invoiceTerm.Name = beforeName;
+        beforeName = String.Empty;
+        invoiceTermsGrid!.CancelEditRow(invoiceTerm);
+        Reset();
+    }
+
+    async Task DeleteRow(InvoiceTermsDTO invoiceTerm)
+    {
+        var auth = await authState.GetAuthenticationStateAsync();
+        Reset();
+        try
+        {
+            bool found = await unitOfWork.InvoiceTerms.DeleteMine(auth.User, invoiceTerm.Id);
+            if (found)
+            {
+                await unitOfWork.Save();
+                await unitOfWork.InvoiceTerms.Seed(auth.User);
+                await unitOfWork.Save();
+
+                invoiceTerms = await unitOfWork.InvoiceTerms.GetAllMine(auth.User);
+
+            }
+            else
+            {
+                invoiceTermsGrid!.CancelEditRow(invoiceTerm);
+            }
+            await invoiceTermsGrid!.Reload();
+        }
+        catch (RepositoryDeleteException)
+        {
+            Message = "Can't delete Selected Invoice Terms, it is being used by an invoice.";
+        }
+
+    }
+
+    async Task InsertRow()
+    {
+        Message = "";
+        invoiceTermsToInsert = new InvoiceTermsDTO();
+        await invoiceTermsGrid!.InsertRow(invoiceTermsToInsert);
+    }
+
+    async Task OnCreateRow(InvoiceTermsDTO invoiceTerm)
+    {
+        var auth = await authState.GetAuthenticationStateAsync();
+        invoiceTerm.Id = await unitOfWork.InvoiceTerms.AddMine(auth.User, invoiceTerm);
+        await unitOfWork.Save();
+        invoiceTerms = await unitOfWork.InvoiceTerms.GetAllMine(auth.User);
+
+        invoiceTermsToInsert = null;
+        await invoiceTermsGrid!.Reload();
+
+    }
+
+    void Reset()
+    {
+        Message = string.Empty;
+        invoiceTermsToInsert = null;
+        invoiceTermsToUpdate = null;
+    }
+}

@@ -13,8 +13,8 @@ namespace BlazorInvoiceApp.Repository
         where TEntity : class, IEntity, IOwnedEntity
         where TDTO : class, IDTO, IOwnedDTO
     {
-        private readonly ApplicationDbContext _context;
-        private readonly IMapper _mapper;
+        public readonly ApplicationDbContext _context;
+        public readonly IMapper _mapper;
 
         public GenericOwnedRepository(IMapper mapper, ApplicationDbContext context)
         {
@@ -131,8 +131,8 @@ namespace BlazorInvoiceApp.Repository
 
         }
 
-        protected async Task<List<TDTO>> GenericQuery(ClaimsPrincipal User, Expression<Func<TEntity, bool>>? expression
-            , List<Expression<Func<TEntity, object>>> includes)
+        protected async Task<List<TDTO>> GenericQuery(ClaimsPrincipal User, Expression<Func<TEntity, bool>>? expression = null
+            , List<Expression<Func<TEntity, object>>>? includes = null)
         {
             string? userid = GetMyUserId(User);
             if (userid is not null)

@@ -2,10 +2,10 @@
 {
     public interface IUnitOfWork : IDisposable
     {
-        IInvoiceLineItemRepository InvoiceLineItemRepository { get; }
-        ICustomerRepository CustomerRepository { get; }
-        IInvoiceRepository InvoiceRepository { get; }
-        IInvoiceTermsRepository InvoiceTermsRepository { get; }
+        IInvoiceLineItemRepository InvoiceLineItem { get; }
+        ICustomerRepository Customer { get; }
+        IInvoiceRepository Invoice { get; }
+        IInvoiceTermsRepository InvoiceTerms { get; }
         Task<int> Save();
     }
 }
